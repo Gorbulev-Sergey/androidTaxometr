@@ -58,21 +58,12 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        askRuntimePermission();
+
         rootView = findViewById(R.id.rootView);
         webView = findViewById(R.id.webView);
 
-        if (Build.VERSION.SDK_INT >= 23) {
-            // Marshmallow+ Permission APIs
-            askRuntimePermission();
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            if (0 != (getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE)) {
-                WebView.setWebContentsDebuggingEnabled(true);
-            }
-        }
-
         webView.getSettings().setJavaScriptCanOpenWindowsAutomatically(true);
-        webView.getSettings().setBuiltInZoomControls(true);
         webView.setWebViewClient(new GeoWebViewClient());
         // Below required for geolocation
         webView.getSettings().setJavaScriptEnabled(true);
@@ -87,15 +78,11 @@ public class MainActivity extends AppCompatActivity {
 
     public class GeoWebChromeClient extends android.webkit.WebChromeClient {
         @Override
-        public void onGeolocationPermissionsShowPrompt(final String origin,
-                                                       final GeolocationPermissions.Callback callback) {
+        public void onGeolocationPermissionsShowPrompt(final String origin, final GeolocationPermissions.Callback callback) {
             callback.invoke(origin, true, false);
         }
     }
 
-    /**
-     * Подкласс WebViewClient загружает все гиперссылки в существующем WebView
-     */
     public class GeoWebViewClient extends WebViewClient {
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
@@ -178,14 +165,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * Проверьте, есть ли какое-либо подключение
-     *
-     * @return подключено ли устройство
-     */
     public boolean isConnected() {
-        ConnectivityManager cm = (ConnectivityManager)
-                this.getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager) this.getSystemService(Context.CONNECTIVITY_SERVICE);
 
         if (null != cm) {
             NetworkInfo info = cm.getActiveNetworkInfo();
@@ -198,26 +179,18 @@ public class MainActivity extends AppCompatActivity {
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         switch (requestCode) {
             case REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS: {
-                Map<String, Integer> perms = new HashMap<String, Integer>();
+                Map<String, Integer> perms = new HashMap<>();
                 // Initial
                 perms.put(android.Manifest.permission.ACCESS_FINE_LOCATION, PackageManager.PERMISSION_GRANTED);
-
-                // Fill with results
                 for (int i = 0; i < permissions.length; i++)
                     perms.put(permissions[i], grantResults[i]);
-
                 // Check for ACCESS_FINE_LOCATION
                 if (perms.get(android.Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED
                 ) {
-                    // All Permissions Granted
-                    // Permission Denied
-                    Toast.makeText(MainActivity.this, "All Permission GRANTED !! Thank You :)", Toast.LENGTH_SHORT)
-                            .show();
                 } else {
-                    // Permission Denied
-                    Toast.makeText(MainActivity.this, "One or More Permissions are DENIED Exiting App :(", Toast.LENGTH_SHORT)
+                    Toast.makeText(MainActivity.this, "Отсутсвует доступ к местоположению! Очистите кэш приложения, и предоставьте доступ к местоположению!", Toast.LENGTH_SHORT)
                             .show();
-                    finish();
+                    //finish();
                 }
             }
             break;
@@ -233,40 +206,33 @@ public class MainActivity extends AppCompatActivity {
         final List<String> permissionsList = new ArrayList<String>();
         if (!addPermission(permissionsList, Manifest.permission.ACCESS_FINE_LOCATION))
             permissionsNeeded.add("Show Location");
-
         if (permissionsList.size() > 0) {
             if (permissionsNeeded.size() > 0) {
                 // Need Rationale
                 String message = "App need access to " + permissionsNeeded.get(0);
                 for (int i = 1; i < permissionsNeeded.size(); i++)
                     message = message + ", " + permissionsNeeded.get(i);
-                showMessageOKCancel(message,
-                        (dialog, which) -> requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
-                                REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS));
+                requestPermissions(permissionsList.toArray(new String[permissionsList.size()]), REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
                 return;
             }
             requestPermissions(permissionsList.toArray(new String[permissionsList.size()]),
                     REQUEST_CODE_ASK_MULTIPLE_PERMISSIONS);
-            return;
         }
-        //Toast.makeText(MainActivity.this, "Доступ к геолокации уже имеется!!", Toast.LENGTH_SHORT).show();
     }
 
     private void showMessageOKCancel(String message, DialogInterface.OnClickListener okListener) {
         new AlertDialog.Builder(MainActivity.this)
                 .setMessage(message)
                 .setPositiveButton("OK", okListener)
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Отмена", null)
                 .create()
                 .show();
     }
 
     @TargetApi(Build.VERSION_CODES.M)
     private boolean addPermission(List<String> permissionsList, String permission) {
-
         if (checkSelfPermission(permission) != PackageManager.PERMISSION_GRANTED) {
             permissionsList.add(permission);
-            // Check for Rationale Option
             if (!shouldShowRequestPermissionRationale(permission))
                 return false;
         }
